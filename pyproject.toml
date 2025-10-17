@@ -1,0 +1,12 @@
+[project]
+name = "tts-mcp-server"
+version = "1.0.0"
+description = "Text-to-Speech MCP Server for SDLC progress announcements"
+dependencies = [
+    "boto3>=1.34.0",
+    "mcp>=1.0.0",
+    "fastmcp"
+]
+
+[project.scripts]
+tts-mcp-server = "server:main"
