@@ -8,7 +8,7 @@ import tempfile
 from mcp.server.fastmcp import FastMCP
 
 # Create FastMCP server for stdio transport
-mcp = FastMCP("tts-mcp-server")
+mcp = FastMCP("tts-mcp-server", instructions="Text-to-Speech MCP Server using AWS Polly")
 
 def play_audio(audio_data: bytes) -> None:
     """Play audio using system player."""
@@ -61,7 +61,10 @@ def announce_progress(message: str, voice_id: str = "Joanna") -> str:
         return f"✓ Announced: {message}"
     except Exception as e:
         return f"TTS Error: {str(e)}"
+def main():
+    """Main entry point for the MCP server."""
+    mcp.run()
 
 if __name__ == "__main__":
     # Run with stdio transport for Q CLI integration
-    mcp.run(transport="stdio")
+    main()
