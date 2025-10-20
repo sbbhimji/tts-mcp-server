@@ -52,7 +52,7 @@ def announce_progress(message: str, voice_id: str = "Joanna") -> str:
             Text=message,
             OutputFormat='mp3',
             VoiceId=voice_id,
-            Engine='neural'
+            Engine='generative'
         )
         
         audio_data = response['AudioStream'].read()
