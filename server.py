@@ -12,23 +12,28 @@ mcp = FastMCP("tts-mcp-server", instructions="Text-to-Speech MCP Server using AW
 
 def play_audio(audio_data: bytes) -> None:
     """Play audio using system player."""
-    with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as f:
-        f.write(audio_data)
-        temp_file = f.name
-    
-    system = platform.system()
-    if system == 'Darwin':
-        os.system(f'afplay {temp_file}')
-    elif system == 'Windows':
-        os.system(f'start {temp_file}')
-    elif system == 'Linux':
-        os.system(f'xdg-open {temp_file}')
-    
-    # Clean up temp file
+    temp_file = None
     try:
-        os.remove(temp_file)
-    except:
-        pass
+        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as f:
+            f.write(audio_data)
+            temp_file = f.name
+        
+        system = platform.system()
+        if system == 'Darwin':
+            os.system(f'afplay {temp_file}')
+        elif system == 'Windows':
+            os.system(f'start {temp_file}')
+        elif system == 'Linux':
+            os.system(f'xdg-open {temp_file}')
+        else:
+            print(f"Warning: Unsupported OS {system}, audio file saved to {temp_file}")
+            return
+    finally:
+        if temp_file:
+            try:
+                os.remove(temp_file)
+            except Exception:
+                pass  # Silently ignore cleanup failures
 
 @mcp.tool()
 def announce_progress(message: str, voice_id: str = "Joanna") -> str:
@@ -42,7 +47,6 @@ def announce_progress(message: str, voice_id: str = "Joanna") -> str:
     Returns:
         Status message indicating success or failure
     """
-    # Check if TTS is enabled
     if os.environ.get('ENABLE_TTS', 'true').lower() != 'true':
         return f"TTS disabled: {message}"
     
@@ -56,11 +60,18 @@ def announce_progress(message: str, voice_id: str = "Joanna") -> str:
         )
         
         audio_data = response['AudioStream'].read()
-        play_audio(audio_data)
+        response['AudioStream'].close()
         
+        play_audio(audio_data)
         return f"✓ Announced: {message}"
+        
+    except polly.exceptions.InvalidSsmlException:
+        return f"TTS Error: Invalid message format"
+    except polly.exceptions.TextLengthExceededException:
+        return f"TTS Error: Message too long"
     except Exception as e:
         return f"TTS Error: {str(e)}"
+
 def main():
     """Main entry point for the MCP server."""
     mcp.run()
