@@ -3,37 +3,31 @@
 
 import boto3
 import os
-import platform
 import tempfile
+from playsound import playsound
 from mcp.server.fastmcp import FastMCP
 
 # Create FastMCP server for stdio transport
 mcp = FastMCP("tts-mcp-server", instructions="Text-to-Speech MCP Server using AWS Polly")
 
-def play_audio(audio_data: bytes) -> None:
-    """Play audio using system player."""
+def play_audio(audio_data: bytes) -> str:
+    """Play audio using playsound library (OS-independent)."""
     temp_file = None
     try:
         with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as f:
             f.write(audio_data)
             temp_file = f.name
         
-        system = platform.system()
-        if system == 'Darwin':
-            os.system(f'afplay {temp_file}')
-        elif system == 'Windows':
-            os.system(f'start {temp_file}')
-        elif system == 'Linux':
-            os.system(f'xdg-open {temp_file}')
-        else:
-            print(f"Warning: Unsupported OS {system}, audio file saved to {temp_file}")
-            return
+        playsound(temp_file)
+        return None
+    except Exception as e:
+        return f"Failed to play audio: {str(e)}"
     finally:
         if temp_file:
             try:
                 os.remove(temp_file)
             except Exception:
-                pass  # Silently ignore cleanup failures
+                pass
 
 @mcp.tool()
 def announce_progress(message: str, voice_id: str = "Joanna") -> str:
@@ -62,7 +56,10 @@ def announce_progress(message: str, voice_id: str = "Joanna") -> str:
         audio_data = response['AudioStream'].read()
         response['AudioStream'].close()
         
-        play_audio(audio_data)
+        error = play_audio(audio_data)
+        if error:
+            return f"TTS Error: {error}"
+        
         return f"✓ Announced: {message}"
         
     except polly.exceptions.InvalidSsmlException:
