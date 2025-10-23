@@ -4,7 +4,7 @@
 import boto3
 import os
 import tempfile
-from playsound import playsound
+from playsound3 import playsound
 from mcp.server.fastmcp import FastMCP
 
 # Create FastMCP server for stdio transport
