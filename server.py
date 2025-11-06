@@ -40,7 +40,7 @@ def announce_progress(message: str, voice_id: str = "Joanna") -> str:
     Returns:
         Status message indicating success or failure
     """
-    if os.environ.get('ENABLE_TTS', 'true').lower() != 'false':
+    if os.environ.get('ENABLE_TTS', 'true').lower() != 'true':
         return f"TTS disabled: {message}"
     
     try:
