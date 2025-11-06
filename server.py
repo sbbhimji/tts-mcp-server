@@ -4,15 +4,14 @@
 import boto3
 import os
 import tempfile
-import threading
 from playsound3 import playsound
 from mcp.server.fastmcp import FastMCP
 
 # Create FastMCP server for stdio transport
 mcp = FastMCP("tts-mcp-server", instructions="Text-to-Speech MCP Server using AWS Polly")
 
-def play_audio_async(audio_data: bytes):
-    """Play audio in background thread."""
+def play_audio(audio_data: bytes):
+    """Play audio using playsound library (OS-independent)."""
     temp_file = None
     try:
         with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as f:
@@ -20,6 +19,8 @@ def play_audio_async(audio_data: bytes):
             temp_file = f.name
         
         playsound(temp_file)
+    except Exception as e:
+        return f"Failed to play audio: {str(e)}"
     finally:
         if temp_file:
             try:
@@ -39,7 +40,7 @@ def announce_progress(message: str, voice_id: str = "Joanna") -> str:
     Returns:
         Status message indicating success or failure
     """
-    if os.environ.get('ENABLE_TTS', 'true').lower() != 'true':
+    if os.environ.get('ENABLE_TTS', 'true').lower() != 'false':
         return f"TTS disabled: {message}"
     
     try:
@@ -52,11 +53,7 @@ def announce_progress(message: str, voice_id: str = "Joanna") -> str:
         )
         
         audio_data = response['AudioStream'].read()
-        response['AudioStream'].close()
-        
-        # Play audio in background thread
-        thread = threading.Thread(target=play_audio_async, args=(audio_data,), daemon=True)
-        thread.start()
+        play_audio(audio_data)
         
         return f"✓ Announced: {message}"
         
